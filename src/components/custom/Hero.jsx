@@ -4,15 +4,28 @@ import { Link } from 'react-router-dom';
 
 function Hero() {
     return (
-       <div className='flex flex-col items-center mx-56 gap-9'>
-        <h1 className='font-extrabold text-[50px] text-center mt-16'> Lets makes the Journey Memorable and Worthable </h1>
-       
-        <p className='text-xl text-gray-500 text-center'>You enjoy   and explore the overall place of the world with great Memorable </p>
-       <Link to={'/create'}>
-       <Button className='normal-case'> Get   Started,It's</Button>
-       </Link>
-       </div>
-    )
+        <div className="relative w-full min-h-screen flex items-center justify-center">
+            {/* Background Image */}
+            <img 
+                src="/fun.png" 
+                alt="Background" 
+                className="absolute inset-0 w-full h-full object-cover z-0"
+            />
+            
+            {/* Content */}
+            <div className="relative flex flex-col items-center px-6 sm:px-10 md:px-16 lg:px-24 xl:px-32 2xl:px-48 gap-6 md:gap-9 z-10 text-center">
+                <h1 className="font-extrabold text-4xl sm:text-5xl md:text-5xl lg:text-4xl xl:text-6xl leading-tight text-white">
+                    Let's make the Journey Memorable and Worthwhile
+                </h1>
+                
+                <Link to={'/create'}>
+                    <Button className="normal-case mt-6 sm:mt-10 md:mt-14 lg:mt-16 xl:mt-20 cursor-pointer hover:bg-orange-700 transform transition duration-300">
+                        Get Started
+                    </Button>
+                </Link>
+            </div>
+        </div>
+    );
 }
 
 export default Hero;

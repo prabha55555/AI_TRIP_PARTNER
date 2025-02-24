@@ -57,32 +57,52 @@ function Header() {
     };
 
     return (
-        <div className="p-3 shadow-sm flex justify-between items-center px-5">
-            <img src="/logo.svg" alt="Logo" className="h-9 w-8" />
-            <div>
+        <div className="p-3 shadow-sm flex justify-between items-center px-5 bg-[rgb(0,137,132)] text-white">
+            {/* Logo & Title */}
+            <div className="flex items-center gap-2 sm:gap-3">
+    <img src="/logoo.png" alt="Logo" className="h-8 w-8 sm:h-12 sm:w-12" />
+    <h1
+        className="font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-wide 
+                   text-transparent bg-gradient-to-r from-black via-violet-500 to-blue-500 bg-clip-text"
+        style={{ fontFamily: "Montserrat, sans-serif" }}
+    >
+        TravelBeam
+    </h1>
+</div>
+
+
+            {/* Navigation & User Profile */}
+            <div className="flex items-center gap-3">
                 {user ? (
                     <div className="flex items-center gap-3">
-                        <a href="/create">
-                        <Button variant="outlined" className="rounded-full normal-case">New Trip</Button>
+                        {/* Buttons Hidden on Small Screens */}
+                        <a href="/create" >
+                            <Button variant="outlined" className="rounded-full px-4 py-2 text-sm sm:text-base hover:bg-amber-400">
+                                New Trip
+                            </Button>
                         </a>
-                        <a href="/my-trips">
-                        <Button variant="outlined" className="rounded-full normal-case">My Trips</Button>
+                        <a href="/my-trips" >
+                            <Button variant="outlined" className="rounded-full px-4 py-2 text-sm sm:text-base hover:bg-amber-400">
+                                My Trips
+                            </Button>
                         </a>
+
+                        {/* User Profile Popover */}
                         <Popover>
                             <PopoverTrigger>
                                 <img 
                                     src={user.picture} 
                                     alt="User Avatar" 
-                                    className="h-[35px] w-[35px] rounded-full cursor-pointer" 
+                                    className="h-8 w-8 sm:h-10 sm:w-10 rounded-full cursor-pointer border-2 border-white" 
                                 />
                             </PopoverTrigger>
-                            <PopoverContent>
+                            <PopoverContent className="bg-white p-2 rounded-2xl shadow-md w-30">
                                 <h2 
                                     onClick={() => {
                                         handleLogout();
                                         window.location.href = "/";
                                     }} 
-                                    className="cursor-pointer hover:text-red-500"
+                                    className="cursor-pointer hover:text-red-500 text-center font-semibold" 
                                 >
                                     Logout
                                 </h2>
@@ -90,29 +110,40 @@ function Header() {
                         </Popover>
                     </div>
                 ) : (
-                    <Button onClick={() => setOpenDialog(true)} className="normal-case">Sign in</Button>
+                    <Button 
+                        onClick={() => setOpenDialog(true)} 
+                        className="px-4 py-2 text-sm sm:text-base normal-case"
+                    >
+                        Sign in
+                    </Button>
                 )}
-                <Dialog open={openDialog}>
-                    <DialogContent className="bg-white">
-                        <DialogHeader>
-                            <DialogDescription>
-                                <img src="/logo.svg" className="h-9 w-8" />
-                                <h2 className="font-bold text-lg mt-7 my-3">
+            </div>
+
+            {/* Google Login Dialog */}
+            <Dialog open={openDialog}>
+                <DialogContent className="bg-white">
+                    <DialogHeader>
+                        <DialogDescription>
+                            <div className="flex flex-col items-center">
+                                <img src="/logoo.png" className="h-8 w-8 sm:h-9 sm:w-9" />
+                                <h2 className="font-bold text-lg mt-5 my-2">
                                     Sign In With Google
                                 </h2>
-                                <p> Sign in to the App With authentication security</p>
+                                <p className="text-gray-600 text-sm text-center">
+                                    Securely sign in to access your trips.
+                                </p>
                                 <Button
                                     onClick={login}
-                                    className="w-full mt-5 flex items-center justify-center space-x-2 text-md normal-case"
+                                    className="w-full mt-5 flex items-center justify-center space-x-2 text-md normal-case bg-blue-600 text-white hover:bg-blue-700"
                                 >
                                     <FcGoogle size={20} />
                                     <span>Sign In with Google</span>
                                 </Button>
-                            </DialogDescription>
-                        </DialogHeader>
-                    </DialogContent>
-                </Dialog>
-            </div>
+                            </div>
+                        </DialogDescription>
+                    </DialogHeader>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

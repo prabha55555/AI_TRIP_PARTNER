@@ -1,19 +1,15 @@
-import { useState } from 'react'
-import { Button } from "@material-tailwind/react";
-import'./index.css'
-
-import './App.css'
-import Hero from './components/custom/Hero.jsx'
+import './App.css';
+import Header from './components/custom/header';
+import Hero from './components/custom/Hero.jsx';
+import './index.css';
 
 function App() {
- 
-
-  return (
-    <>
-       <Hero/>
-      
-    </>
-  )
+    return (
+        <div>
+          
+            <Hero/>
+        </div>
+    );
 }
 
-export default App
+export default App;

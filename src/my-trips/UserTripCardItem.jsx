@@ -1,33 +1,33 @@
 import React from 'react'
-import { useState,useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { GetPlaceDetails } from '@/AI/GlobalApi';
 import { PHOTO_REF_URL } from '@/AI/GlobalApi';
 import { Link } from 'react-router-dom';
 
-function UserTripCardItem({trip}) {
-    const[photoUrl,setPhotoUrl]=useState();
-    
-        useEffect(() => {
-            trip&&GetPlacePhoto();
-        }, [trip])
-    
+function UserTripCardItem({ trip }) {
+    const [photoUrl, setPhotoUrl] = useState();
+
+    useEffect(() => {
+        trip && GetPlacePhoto();
+    }, [trip])
+
     const GetPlacePhoto = async () => {
-            const data = {
-                textQuery: trip?.userLocation?.destination?.label
-            }
-            
-                const result = await GetPlaceDetails(data).then(resp=>{
-                    console.log(resp.data.places[0].photos[3].name);
-    
-                   const PhotoUrl=PHOTO_REF_URL.replace('{NAME}',resp.data.places[0].photos[3].name) ;
-                   setPhotoUrl(PhotoUrl);
-                })
-            }
-    
-  return (
-        
-       <Link to={'/view-trip/'+trip.id} className="hover:scale-105 transition-all  cursor-pointer">
-    <div>
+        const data = {
+            textQuery: trip?.userLocation?.destination?.label
+        }
+
+        const result = await GetPlaceDetails(data).then(resp => {
+            console.log(resp.data.places[0].photos[3].name);
+
+            const PhotoUrl = PHOTO_REF_URL.replace('{NAME}', resp.data.places[0].photos[3].name);
+            setPhotoUrl(PhotoUrl);
+        })
+    }
+
+    return (
+        <Link to={'/view-trip/' + trip.id} className="hover:scale-105 transition-all cursor-pointer">
+            <div className="p-4 md:p-6 lg:p-8"></div>
+                <div className="flex flex-col md:flex-row items-center">
       <img src={photoUrl?photoUrl:'/trip.jpg'} alt=""className="object-cover rounded-xlh-[220px]" />
       <div>
         <h2 className='font-bold text-lg'>{trip?.userLocation?.destination?.label}</h2>

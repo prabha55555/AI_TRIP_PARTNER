@@ -3,28 +3,28 @@ export const SelectTravelList = [
         id: 1,
         mtitle: 'Just Me',
         desc: 'A sole travels in exploration',
-        icon: '🧳', // Luggage emoji
+        icon: '🧳', 
         people: '1 people'
     },
     {
         id: 2,
         mtitle: 'Couple',
         desc: 'A romantic getaway for two',
-        icon: '❤️', // Heart emoji
+        icon: '❤️', 
         people: '2 people'
     },
     {
         id: 3,
         mtitle: 'Family',
         desc: 'An all-inclusive family vacation',
-        icon: '👨‍👩‍👧‍👦', // Family emoji
+        icon: '👨‍👩‍👧‍👦', 
         people: '4 to 6 people'
     },
     {
         id: 4,
         mtitle: 'Friends',
         desc: 'An adventurous trip with friends',
-        icon: '👫', // Friends emoji
+        icon: '👫', 
         people: '3+ people'
     }
 ];
@@ -34,21 +34,21 @@ export const BudgetCategories = [
         id: 1,
         mtitle: 'Low Budget',
         desc: 'A budget-friendly trip',
-        icon: '💸', // Money with wings emoji
+        icon: '💸', 
         budget: 'Low'
     },
     {
         id: 2,
         mtitle: 'Medium Budget',
         desc: 'A moderately priced trip',
-        icon: '💵', // Dollar banknote emoji
+        icon: '💵', 
         budget: 'Medium'
     },
     {
         id: 3,
         mtitle: 'High Budget',
         desc: 'A luxurious trip',
-        icon: '💰', // Money bag emoji
+        icon: '💰', 
         budget: 'High'
     }
 ];

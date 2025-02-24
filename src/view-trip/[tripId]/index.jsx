@@ -31,12 +31,16 @@ function Viewtrip() {
     
    
   return (
-    <div className='p-10 md:px-20 lg:px-44 xl:pd-56'>
+    <div className='p-10 md:px-20 lg:px-44 xl:pd-56 relative'>
+<div className="absolute inset-0 w-full min-h-full bg-cover bg-center bg-no-repeat"
+     style={{ backgroundImage: "url('/bg.jpg')" }}>
+</div>        <div className="relative z-10">
    
    <InfoSection trip={trip} />
    <Hotels trip={trip} />
    <PlacesToVisit trip={trip}/>
    <Footer />
+   </div>
     </div>
   )
 }
