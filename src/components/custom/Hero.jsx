@@ -7,7 +7,7 @@ function Hero() {
         <div className="relative w-full min-h-screen flex items-center justify-center">
             {/* Background Image */}
             <img 
-                src="/fun.png" 
+                src="/ship.jpg" 
                 alt="Background" 
                 className="absolute inset-0 w-full h-full object-cover z-0"
             />
