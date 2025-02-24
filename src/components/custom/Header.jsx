@@ -63,7 +63,7 @@ function Header() {
     <img src="/logoo.png" alt="Logo" className="h-8 w-8 sm:h-12 sm:w-12" />
     <h1
         className="font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-wide 
-                   text-transparent bg-gradient-to-r from-black via-violet-500 to-blue-500 bg-clip-text"
+                   text-transparent bg-gradient-to-r from-black via-purplet-500 to-rose-500 bg-clip-text"
         style={{ fontFamily: "Montserrat, sans-serif" }}
     >
         TravelBeam
