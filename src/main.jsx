@@ -10,6 +10,8 @@ import './index.css';
 import MyTrips from './my-trips/index.jsx';
 import Viewtrip from './view-trip/[tripId]/index.jsx';
 
+
+
 const router = createBrowserRouter([
    { path:'/', element: <App /> },
    { path:'/create', element: <Create /> },
