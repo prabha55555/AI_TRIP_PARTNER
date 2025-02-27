@@ -40,13 +40,13 @@ function InfoSection({ trip }) {
                         {trip?.userLocation?.destination?.label}
                     </h2>
                     <div className="flex flex-wrap gap-3 text-sm">
-                        <h2 className="p-2 bg-yellow-500 rounded-full text-black font-semibold flex items-center text-x5 md:text-md">
+                        <h2 className="p-2 bg-amber-50 rounded-full text-black font-semibold flex items-center text-x5 md:text-md">
                             🗓️ {trip.userLocation?.DaysCount} Days
                         </h2>
-                        <h2 className="p-2 bg-yellow-500 rounded-full text-black font-semibold flex items-center text-x5 md:text-md ">
+                        <h2 className="p-2 bg-amber-50 rounded-full text-black font-semibold flex items-center text-x5 md:text-md ">
                             💸 {trip.userLocation?.Budget}
                         </h2>
-                        <h2 className="p-2 bg-yellow-500 rounded-full text-black font-semibold flex items-center text-x5 md:text-md">
+                        <h2 className="p-2 bg-amber-50 rounded-full text-black font-semibold flex items-center text-x5 md:text-md">
                             🧍🏿 {trip.userLocation?.PeopleCount}
                         </h2>
                     </div>

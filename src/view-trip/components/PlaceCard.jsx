@@ -43,7 +43,7 @@ function PlaceCard({ place }) {
         className="rounded-xl p-3 mt-5 flex gap-5 cursor-pointer 
                    transition-transform transition-shadow duration-300 ease-in-out 
                    bg-white shadow-md 
-                   hover:bg-yellow-300 hover:shadow-xl hover:scale-105"
+                   hover:bg-amber-50 hover:shadow-xl hover:scale-105"
       >
         <img 
           src={photoUrl ? photoUrl : '/trip.jpg'} 
@@ -52,8 +52,8 @@ function PlaceCard({ place }) {
         />
         <div>
           <h2 className='font-bold text-lg'>{place?.placeName}</h2>
-          <p className='text-sm text-gray-400 mt-2'>{place?.placeDetails}</p>
-          <p className='text-sm text-black-400 mt-2 my-2'>💸 {place?.ticketPricing}</p>
+          <p className='text-sm text-black-400 mt-2'>{place?.placeDetails}</p>
+          <p className='text-sm text-gray-400 mt-2 my-2'>💸 {place?.ticketPricing}</p>
           <Button><FaLocationDot /></Button>
         </div>
       </div>
