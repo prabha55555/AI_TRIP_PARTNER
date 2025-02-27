@@ -9,10 +9,14 @@ import { googleLogout, useGoogleLogin } from "@react-oauth/google";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { FcGoogle } from "react-icons/fc";
+// Add Drawer import if not already imported elsewhere
+import { Drawer } from "@material-tailwind/react";
 
 function Header() {
     const user = JSON.parse(localStorage.getItem('user'));
     const [openDialog, setOpenDialog] = useState(false);
+    // Add this single line for the drawer state
+    const [openDrawer, setOpenDrawer] = useState(false);
 
     useEffect(() => {
         console.log(user);
@@ -60,15 +64,26 @@ function Header() {
         <div className="p-3 shadow-sm flex justify-between items-center px-5 bg-[rgb(0,137,132)] text-white">
             {/* Logo & Title */}
             <div className="flex items-center gap-2 sm:gap-3">
-    <img src="/logoo.png" alt="Logo" className="h-8 w-8 sm:h-12 sm:w-12" />
-    <h1
-        className="font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-wide 
-                   text-transparent bg-gradient-to-r from-black via-purplet-500 to-rose-500 bg-clip-text"
-        style={{ fontFamily: "Montserrat, sans-serif" }}
-    >
-        TravelBeam
-    </h1>
-</div>
+                {/* Add hamburger menu button before the logo for mobile */}
+                <button 
+                    onClick={() => setOpenDrawer(true)}
+                    className="block sm:hidden mr-2"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <line x1="3" y1="12" x2="21" y2="12"></line>
+                        <line x1="3" y1="6" x2="21" y2="6"></line>
+                        <line x1="3" y1="18" x2="21" y2="18"></line>
+                    </svg>
+                </button>
+                <img src="/logoo.png" alt="Logo" className="h-8 w-8 sm:h-12 sm:w-12" />
+                <h1
+                    className="font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-wide 
+                           text-transparent bg-gradient-to-r from-black via-purplet-500 to-rose-500 bg-clip-text"
+                    style={{ fontFamily: "Montserrat, sans-serif" }}
+                >
+                    TravelBeam
+                </h1>
+            </div>
 
 
             {/* Navigation & User Profile */}
@@ -76,13 +91,13 @@ function Header() {
                 {user ? (
                     <div className="flex items-center gap-3">
                         {/* Buttons Hidden on Small Screens */}
-                        <a href="/create" >
-                            <Button variant="outlined" className="rounded-full px-4 py-2 text-sm sm:text-base hover:bg-amber-400">
+                        <a href="/create" className="hidden sm:block">
+                            <Button variant="outlined" className="rounded-full px-4 py-2 text-sm sm:text-base hover:bg-amber-50">
                                 New Trip
                             </Button>
                         </a>
-                        <a href="/my-trips" >
-                            <Button variant="outlined" className="rounded-full px-4 py-2 text-sm sm:text-base hover:bg-amber-400">
+                        <a href="/my-trips" className="hidden sm:block">
+                            <Button variant="outlined" className="rounded-full px-4 py-2 text-sm sm:text-base hover:bg-amber-50">
                                 My Trips
                             </Button>
                         </a>
@@ -118,6 +133,35 @@ function Header() {
                     </Button>
                 )}
             </div>
+            <Drawer className="bg-amber-50"anchor="left" open={openDrawer} onClose={() => setOpenDrawer(false)}>
+                <div className="w-64 p-5 flex flex-col gap-4 items-center ">
+                    <h2 className="text-lg font-bold mb-4">Menu</h2>
+                    <a 
+                        href="/create" 
+                        className="text-lg font-medium text-gray-700 hover:text-white hover:bg-[rgb(0,137,132)] px-6 py-2 rounded-full border border-gray-300 w-full text-center transition-colors duration-300"
+                    >
+                        New Trip
+                    </a>
+                    <a 
+                        href="/my-trips" 
+                        className="text-lg font-medium text-gray-700 hover:text-white hover:bg-[rgb(0,137,132)] px-6 py-2 rounded-full border border-gray-300 w-full text-center transition-colors duration-300"
+                    >
+                        My Trips
+                    </a>
+                    {user && (
+                        <a 
+                            href="#" 
+                            onClick={() => {
+                                handleLogout();
+                                window.location.href = "/";
+                            }}
+                            className="text-lg font-medium text-red-500 hover:text-white hover:bg-red-500 px-6 py-2 rounded-full border border-red-300 w-full text-center mt-4 transition-colors duration-300"
+                        >
+                            Logout
+                        </a>
+                    )}
+                </div>
+            </Drawer>
 
             {/* Google Login Dialog */}
             <Dialog open={openDialog}>

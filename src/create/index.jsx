@@ -187,14 +187,14 @@ function Create() {
                                     <div
                                         onClick={() => handleInput("Budget", item.mtitle)}
                                         key={index}
-                                        className={`p-4 border border-white rounded-lg hover:bg-amber-400 shadow-[0_10px_20px_rgba(0,0,0,0.4)] cursor-pointer
+                                        className={`p-4 border border-white rounded-lg hover:bg-white-400 shadow-[0_10px_20px_rgba(0,0,0,0.4)] cursor-pointer
                                              ${
-                                                    form?.Budget === item.mtitle && "shadow-xl !border-black bg-amber-400"
+                                                    form?.Budget === item.mtitle && "shadow-xl !border-black bg-amber-50"
                                              }`}
                                     >
                                         <h2 className="font-bold text-lg mt-3">{item.mtitle}</h2>
                                         <h2 className="text-4xl">{item.icon}</h2>
-                                        <h2 className="text-sm text-white -500 mt-4">{item.desc}</h2>
+                                        <h2 className="text-sm text-black -500 mt-4">{item.desc}</h2>
                                     </div>
                                 ))}
                             </div>
@@ -208,21 +208,24 @@ function Create() {
                                     <div
                                         onClick={() => handleInput("PeopleCount", item.people)}
                                         key={index}
-                                        className={`p-4 border border-white rounded-lg hover:bg-amber-400 shadow-[0_10px_20px_rgba(0,0,0,0.4)] cursor-pointer
+                                        className={`p-4 border border-white rounded-lg hover:bg-white-400 shadow-[0_10px_20px_rgba(0,0,0,0.4)] cursor-pointer
                                         ${
-                                             form?.PeopleCount === item.people && "shadow-xl !border-black bg-amber-400"
+                                             form?.PeopleCount === item.people && "shadow-xl !border-black bg-amber-50"
                                         }`}           
                                     >
                                         <h2 className="text-4xl">{item.icon}</h2>
                                         <h2 className="font-bold text-lg mt-3">{item.mtitle}</h2>
-                                        <h2 className="text-sm text-white -500">{item.desc}</h2>
+                                        <h2 className="text-sm  text-black -500">{item.desc}</h2>
                                     </div>
                                 ))}
                             </div>
+                            
                         </div>
+                        
                     </div>
                     <div className="my-10 justify-center flex ">
-                        <Button disabled={loading} onClick={onGenerate}>
+                        
+                        <Button disabled={loading} onClick={onGenerate} >
                             {loading ? <AiOutlineLoading3Quarters className="h-7 w-7 animate-spin" /> : "Make the Trip"}
                         </Button>
                     </div>
