@@ -25,7 +25,7 @@ TravelBeam is an intelligent travel planning application that helps users create
     - Google Places API for location data
     - Google Generative AI (Gemini) for intelligent recommendations
     - Google Maps API for interactive maps
-    - OpenWeather API for weather forecasts
+  
 
 ## Prerequisites
 - Node.js (v14 or higher)
