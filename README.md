@@ -122,6 +122,6 @@ mu/
 - **Group Customization**: Specify group size and type (family, friends, solo, couple)
 - **Interest Selection**: Choose activities and interests for personalized recommendations
 
-##DEMO 
+## DEMO 
 
 https://github.com/user-attachments/assets/f6321aa1-49c9-4b57-bc1a-4ac328201df4
