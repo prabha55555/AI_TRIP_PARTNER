@@ -117,7 +117,7 @@ mu/
 
 ### 1. Trip Creation
 - **Destination Selection**: Utilize Google Places Autocomplete for accurate location search
-- **Duration Planning**: Set trip length from 1 to 30 days
+- **Duration Planning**: Set trip length from 1 to 5 days
 - **Budget Configuration**: Choose from economy, moderate, or luxury budget categories
 - **Group Customization**: Specify group size and type (family, friends, solo, couple)
 - **Interest Selection**: Choose activities and interests for personalized recommendations
