@@ -1,5 +1,9 @@
 # TravelBeam - AI-Powered Travel Planner
 
+## DEMO 
+
+https://github.com/user-attachments/assets/f6321aa1-49c9-4b57-bc1a-4ac328201df4
+
 ## Overview
 TravelBeam is an intelligent travel planning application that helps users create personalized travel itineraries using AI. The application provides custom travel recommendations based on user preferences, including destination, duration, budget, and group size.
 
@@ -122,6 +126,4 @@ mu/
 - **Group Customization**: Specify group size and type (family, friends, solo, couple)
 - **Interest Selection**: Choose activities and interests for personalized recommendations
 
-## DEMO 
 
-https://github.com/user-attachments/assets/f6321aa1-49c9-4b57-bc1a-4ac328201df4
