@@ -58,5 +58,5 @@ src/
 - All keys are `VITE_*`, so they are **bundled into the browser**. Restrict each key in Google Cloud (HTTP referrer + API restrictions) or move Gemini/Places calls behind a server/Cloud Function.
 - Auth is client-side only and Firestore is queried by `userEmail`. Production needs Firebase Authentication plus Firestore rules, e.g. `allow create: if request.auth.token.email == request.resource.data.userEmail; allow read: if true` (shareable by unguessable id) with `allow update, delete: if request.auth.token.email == resource.data.userEmail`.
 - `firestore.rules` in this repo is the target rule set; it only takes effect once users sign in via Firebase Auth.
-- Never commit `.env.local`. If keys were ever pushed to a public repo, rotate them.
+- Never commit `.env.local`. If keys were ever pushed to a public repo, rotate thems.
 
