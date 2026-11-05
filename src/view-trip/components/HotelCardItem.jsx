@@ -1,50 +1,38 @@
-import React from 'react'
-import { Link } from 'react-router-dom';
-import { useState,useEffect } from 'react';
-import { GetPlaceDetails } from '@/AI/GlobalApi';
-import { PHOTO_REF_URL } from '@/AI/GlobalApi';
+import { Hotel, Star } from "lucide-react";
+import PlacePhoto from "@/components/custom/PlacePhoto";
+import { Badge } from "@/components/ui/badge";
 
-function HotelCardItem({hotel}) {
- const[photoUrl,setPhotoUrl]=useState();
+function HotelCardItem({ hotel }) {
+    const mapsUrl =
+        "https://www.google.com/maps/search/?api=1&query=" +
+        encodeURIComponent(`${hotel?.hotelName}, ${hotel?.hotelAddress ?? ""}`);
+    const topRated = Number(hotel?.rating) >= 4.5;
 
-    useEffect(() => {
-        hotel&&GetPlacePhoto();
-    }, [hotel])
-
-    const GetPlacePhoto = async () => {
-        const data = {
-            textQuery: hotel?.hotelName
-        }
-        
-            const result = await GetPlaceDetails(data).then(resp=>{
-                console.log(resp.data.places[0].photos[3].name);
-
-               const PhotoUrl=PHOTO_REF_URL.replace('{NAME}',resp.data.places[0].photos[3].name) ;
-               setPhotoUrl(PhotoUrl);
-            })
-        }
-
-  return (
-    <Link to={'https://www.google.com/maps/search/?api=1&query='+hotel.hotelName+","+hotel?.hotelAddress} target="_blank">  
-    <div className="scale-100 transition-all cursor-pointer">
-        <img src={photoUrl?photoUrl:'/trip.jpg'} 
-             className='rounded-xl mt-3 h-[180px] w-full object-cover 
-                      hover:shadow-xl active:shadow-xl 
-                      hover:scale-105 active:scale-105 
-                      transition-all duration-300'/>
-        <div className="my-2 flex flex-col gap-2 hover:bg-amber-50 active:bg-amber-500" >
-            
-            <div className='bg-amber-50 p-3 rounded-lg'>
-            <h2 className="font-medium">{hotel?.hotelName}</h2>
-            <h2 className="text-xs text-grey-500 mt-2"> 📌 {hotel?.hotelAddress}</h2>
-            <h2 className="text-sm "> 💰 {hotel?.price}</h2>
-            <h2 className="text-sm "> ⭐ {hotel?.rating}</h2>
-           </div>
-        </div>
-
-       </div>  
-    </Link>
-  )
+    return (
+        <a href={mapsUrl} target="_blank" rel="noopener noreferrer" className="group block">
+            <div className="relative">
+                <PlacePhoto
+                    query={hotel?.hotelName}
+                    alt={hotel?.hotelName ?? ""}
+                    icon={Hotel}
+                    className="aspect-[4/3] rounded-2xl"
+                    imgClassName="transition-transform duration-500 group-hover:scale-[1.04]"
+                />
+                {topRated && <Badge variant="overlay" className="absolute left-3 top-3 font-semibold shadow-sm">Top rated</Badge>}
+            </div>
+            <div className="mt-3 flex items-start justify-between gap-3">
+                <h3 className="font-semibold">{hotel?.hotelName}</h3>
+                {hotel?.rating != null && (
+                    <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold">
+                        <Star className="h-4 w-4 fill-foreground text-foreground" aria-hidden="true" /> {hotel.rating}
+                    </span>
+                )}
+            </div>
+            <p className="mt-0.5 line-clamp-1 text-sm text-muted-foreground">{hotel?.hotelAddress}</p>
+            {hotel?.description && <p className="mt-2 line-clamp-2 text-sm text-muted-foreground">{hotel.description}</p>}
+            {hotel?.price && <p className="mt-2 text-sm font-semibold">{hotel.price}</p>}
+        </a>
+    );
 }
 
-export default HotelCardItem
+export default HotelCardItem;

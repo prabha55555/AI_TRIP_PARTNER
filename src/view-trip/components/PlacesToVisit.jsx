@@ -1,42 +1,83 @@
-import React from 'react';
-import PlaceCard from './PlaceCard';
+import { ChevronDown, Route, Sun } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { buttonVariants } from "@/components/ui/button";
+import { SectionHeading } from "@/components/ui/section-heading";
+import { dayNumber, dayRouteUrl, itineraryDays } from "@/lib/trips";
+import { cn } from "@/lib/utils";
+import PlaceCard from "./PlaceCard";
 
 function PlacesToVisit({ trip }) {
-    const itinerary = trip.tripData?.itinerary || {};
+    const itinerary = trip?.tripData?.itinerary ?? {};
+    const dayKeys = itineraryDays(trip);
+    const destination = trip?.userLocation?.destination?.label ?? "";
 
-    const formatDayKey = (dayKey) => {
-        const dayNumber = parseInt(dayKey.replace('day', ''), 10);
-        return `Day ${dayNumber}`;
-    };
-
-    const sortedDayKeys = Object.keys(itinerary).sort((a, b) => {
-        const dayA = parseInt(a.replace('day', ''), 10);
-        const dayB = parseInt(b.replace('day', ''), 10);
-        return dayA - dayB;
-    });
+    if (dayKeys.length === 0) {
+        return <p className="text-muted-foreground">No itinerary available.</p>;
+    }
 
     return (
-        <div>
-            <h2 className="font-bold text-lg mt-5">Places to Visit</h2>
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-5">
-                {sortedDayKeys.length > 0 ? (
-                    sortedDayKeys.map((dayKey, index) => (
-                        <div key={index} className="mb-5">
-                            <h2 className="font-medium text-lg">{formatDayKey(dayKey)}</h2>
-                            <h2 className="font-medium text-sm text-black-600 my-5"> 🔗 Best Time to Visit: {itinerary[dayKey].bestTimeToVisit}</h2>
-                            {Array.isArray(itinerary[dayKey].plan) && itinerary[dayKey].plan.map((place, idx) => (
-                                <div key={idx} className="ml-5 mt-2">
-                                    <h2 className="font-medium text-sm text-orange-600 my-5">🕙 {place.timeTravel}</h2>
-                                    <PlaceCard place={place} /> 
+        <section id="itinerary" className="scroll-mt-24">
+            <SectionHeading title="Day-by-day itinerary" description="Open or collapse any day. Times and prices are AI estimates." />
+
+            {/* Mobile/tablet: the desktop summary card is hidden, so jump links live here. */}
+            <nav aria-label="Jump to day" className="-mx-4 mt-5 flex gap-2 overflow-x-auto px-4 pb-1 lg:hidden">
+                {dayKeys.map((key) => (
+                    <a
+                        key={key}
+                        href={`#day-${dayNumber(key)}`}
+                        className="inline-flex h-10 shrink-0 items-center rounded-full border border-border-strong px-4 text-sm font-semibold hover:bg-muted"
+                    >
+                        Day {dayNumber(key)}
+                    </a>
+                ))}
+            </nav>
+
+            <div className="mt-6 divide-y divide-border border-y border-border">
+                {dayKeys.map((key) => {
+                    const day = itinerary[key];
+                    const plan = Array.isArray(day?.plan) ? day.plan : [];
+                    const routeUrl = dayRouteUrl(plan, destination);
+                    return (
+                        <details key={key} id={`day-${dayNumber(key)}`} open className="group scroll-mt-24 py-5">
+                            <summary className="flex cursor-pointer list-none items-center justify-between gap-4 rounded-lg [&::-webkit-details-marker]:hidden">
+                                <div className="min-w-0">
+                                    <h3 className="display-lg">Day {dayNumber(key)}</h3>
+                                    {day?.theme && <p className="mt-0.5 text-muted-foreground">{day.theme}</p>}
                                 </div>
-                            ))}
-                        </div>
-                    ))
-                ) : (
-                    <p>No itinerary available.</p>
-                )}
+                                <ChevronDown className="h-6 w-6 shrink-0 text-muted-foreground transition-transform group-open:rotate-180" aria-hidden="true" />
+                            </summary>
+
+                            <div className="mt-4 flex flex-wrap items-center gap-3">
+                                {day?.bestTimeToVisit && (
+                                    <Badge><Sun className="h-3.5 w-3.5" aria-hidden="true" /> Best time: {day.bestTimeToVisit}</Badge>
+                                )}
+                                {routeUrl && (
+                                    <a
+                                        href={routeUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className={cn(buttonVariants({ variant: "outline", size: "sm" }))}
+                                    >
+                                        <Route className="h-4 w-4" aria-hidden="true" /> Open day route in Google Maps
+                                    </a>
+                                )}
+                            </div>
+
+                            <ol className="relative mt-6 space-y-5 before:absolute before:bottom-4 before:left-[0.9rem] before:top-4 before:w-px before:bg-border-strong">
+                                {plan.map((place, i) => (
+                                    <li key={`${place.placeName}-${i}`} className="relative pl-12">
+                                        <span className="absolute left-0 top-3 grid h-7 w-7 place-items-center rounded-full bg-foreground text-xs font-bold text-white ring-4 ring-white">
+                                            {i + 1}
+                                        </span>
+                                        <PlaceCard place={place} destination={destination} />
+                                    </li>
+                                ))}
+                            </ol>
+                        </details>
+                    );
+                })}
             </div>
-        </div>
+        </section>
     );
 }
 

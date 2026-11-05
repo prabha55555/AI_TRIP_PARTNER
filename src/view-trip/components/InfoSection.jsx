@@ -1,61 +1,48 @@
-import { GetPlaceDetails } from "@/AI/GlobalApi.jsx"; // Import the GetPlaceDetails function
-import { Button } from "@material-tailwind/react";
-import { useState,useEffect } from "react";
-import { HiShare } from "react-icons/hi";
-import React from "react";
+import { CalendarDays, Hotel, MapPin, Users, Wallet } from "lucide-react";
+import PlacePhoto from "@/components/custom/PlacePhoto";
+import ShareButton from "@/components/custom/ShareButton";
+import { Badge } from "@/components/ui/badge";
+import { galleryQueries } from "@/lib/trips";
 
-
-const PHOTO_REF_URL='https://places.googleapis.com/v1/{NAME}/media?maxHeightPx=600&maxWidthPx=600&key='+import.meta.env.VITE_GOOGLE_PLACES_API_KEY;
-
+/** Title, meta row and a photo gallery built only from real Places photos (placeholders when missing). */
 function InfoSection({ trip }) {
-    const[photoUrl,setPhotoUrl]=useState();
-
-    useEffect(() => {
-        trip&&GetPlacePhoto();
-    }, [trip])
-
-    const GetPlacePhoto = async () => {
-        const data = {
-            textQuery: trip?.userLocation?.destination?.label
-        }
-        
-            const result = await GetPlaceDetails(data).then(resp=>{
-                console.log(resp.data.places[0].photos[3].name);
-
-               const PhotoUrl=PHOTO_REF_URL.replace('{NAME}',resp.data.places[0].photos[3].name) ;
-               setPhotoUrl(PhotoUrl);
-            })
-       
-    }
+    const label = trip?.userLocation?.destination?.label;
+    const small = galleryQueries(trip, 4);
+    const slots = Array.from({ length: 4 }, (_, i) => small[i]);
 
     return (
-        <div className="space-y-4">
-            <img
-                src={photoUrl?photoUrl:'/trip.jpg'}
-                className="h-[340px] w-full object-cover rounded-2xl"
-            />
-            <div className="flex justify-between items-start">
-                <div className="mt-5 flex flex-col gap-2">
-                    <h2 className="font-bold text-2xl">
-                        {trip?.userLocation?.destination?.label}
-                    </h2>
-                    <div className="flex flex-wrap gap-3 text-sm">
-                        <h2 className="p-2 bg-amber-50 rounded-full text-black font-semibold flex items-center text-x5 md:text-md">
-                            🗓️ {trip.userLocation?.DaysCount} Days
-                        </h2>
-                        <h2 className="p-2 bg-amber-50 rounded-full text-black font-semibold flex items-center text-x5 md:text-md ">
-                            💸 {trip.userLocation?.Budget}
-                        </h2>
-                        <h2 className="p-2 bg-amber-50 rounded-full text-black font-semibold flex items-center text-x5 md:text-md">
-                            🧍🏿 {trip.userLocation?.PeopleCount}
-                        </h2>
+        <section>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="min-w-0">
+                    <h1 className="display-xl">{label}</h1>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                        <Badge><CalendarDays className="h-3.5 w-3.5" aria-hidden="true" />{trip.userLocation?.DaysCount} days</Badge>
+                        <Badge><Wallet className="h-3.5 w-3.5" aria-hidden="true" />{trip.userLocation?.Budget}</Badge>
+                        <Badge><Users className="h-3.5 w-3.5" aria-hidden="true" />{trip.userLocation?.PeopleCount}</Badge>
                     </div>
                 </div>
-                <Button className="mt-5">
-                    <HiShare size={20} />
-                </Button>
+                <ShareButton title={`Trip to ${label}`} />
             </div>
-        </div>
+
+            <div className="mt-6 grid gap-2 overflow-hidden rounded-2xl sm:h-[26rem] sm:grid-cols-4 sm:grid-rows-2">
+                <PlacePhoto
+                    query={label}
+                    large
+                    alt={label ?? ""}
+                    icon={MapPin}
+                    className="aspect-[3/2] sm:col-span-2 sm:row-span-2 sm:aspect-auto"
+                />
+                {slots.map((q, i) => (
+                    <PlacePhoto
+                        key={i}
+                        query={q}
+                        alt={q ?? ""}
+                        icon={i === 0 ? Hotel : MapPin}
+                        className="hidden sm:block"
+                    />
+                ))}
+            </div>
+        </section>
     );
 }
 

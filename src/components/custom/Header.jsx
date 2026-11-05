@@ -1,194 +1,126 @@
-import { Dialog, DialogContent, DialogDescription, DialogHeader } from "@/components/ui/dialog";
-import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
-} from "@/components/ui/popover";
-import { Button } from "@material-tailwind/react";
-import { googleLogout, useGoogleLogin } from "@react-oauth/google";
-import axios from "axios";
-import { useEffect, useState } from "react";
-import { FcGoogle } from "react-icons/fc";
-// Add Drawer import if not already imported elsewhere
-import { Drawer } from "@material-tailwind/react";
+import { LogOut, Map, Menu, Plus, Search, User, X } from "lucide-react";
+import { useState } from "react";
+import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useAuth } from "@/lib/auth";
+import { profileInitial } from "@/lib/profile";
+import { cn } from "@/lib/utils";
+import Logo from "./Logo";
+
+const navLinkClass = ({ isActive }) =>
+    cn(
+        "rounded-full px-4 py-2 text-sm font-semibold transition-colors hover:bg-muted",
+        isActive ? "text-foreground" : "text-muted-foreground hover:text-foreground"
+    );
+
+/** Profile photo with an initial-letter fallback if the image is missing or fails to load. */
+function Avatar({ user }) {
+    const [failed, setFailed] = useState(false);
+    if (!user.picture || failed) {
+        const initial = profileInitial(user);
+        return (
+            <span className="grid h-10 w-10 place-items-center rounded-full bg-foreground text-sm font-bold text-white" aria-hidden="true">
+                {initial || <User className="h-5 w-5" />}
+            </span>
+        );
+    }
+    return (
+        <img
+            src={user.picture}
+            alt=""
+            referrerPolicy="no-referrer"
+            onError={() => setFailed(true)}
+            className="h-10 w-10 rounded-full border border-border bg-muted object-cover"
+        />
+    );
+}
 
 function Header() {
-    const user = JSON.parse(localStorage.getItem('user'));
-    const [openDialog, setOpenDialog] = useState(false);
-    // Add this single line for the drawer state
-    const [openDrawer, setOpenDrawer] = useState(false);
+    const { user, requestLogin, signOut } = useAuth();
+    const navigate = useNavigate();
+    const { pathname } = useLocation();
+    const [menuOpenAt, setMenuOpenAt] = useState(null);
+    // The menu auto-closes on navigation: it is "open" only for the path it was opened on.
+    const menuOpen = menuOpenAt === pathname;
 
-    useEffect(() => {
-        console.log(user);
-    }, [user]);
-
-    const handleLogout = () => {
-        googleLogout();
-        localStorage.clear();
-        window.location.reload();
-    };
-
-    const login = useGoogleLogin({
-        onSuccess: (tokenInfo) => {
-            console.log("Login Success:", tokenInfo);
-            GetUserProfile(tokenInfo);
-        },
-        onError: (error) => {
-            console.error("Login Error:", error);
-        },
-    });
-
-    const GetUserProfile = (tokenInfo) => {
-        axios
-            .get(
-                `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${tokenInfo?.access_token}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${tokenInfo?.access_token}`,
-                        Accept: "Application/json",
-                    },
-                }
-            )
-            .then((resp) => {
-                console.log(resp);
-                localStorage.setItem("user", JSON.stringify(resp.data));
-                setOpenDialog(false);
-                window.location.reload();
-            })
-            .catch((error) => {
-                console.error("Error fetching user profile:", error);
-            });
+    const handleSignOut = () => {
+        signOut();
+        navigate("/");
     };
 
     return (
-        <div className="p-3 shadow-sm flex justify-between items-center px-5 bg-[rgb(0,137,132)] text-white">
-            {/* Logo & Title */}
-            <div className="flex items-center gap-2 sm:gap-3">
-                {/* Add hamburger menu button before the logo for mobile */}
-                <button 
-                    onClick={() => setOpenDrawer(true)}
-                    className="block sm:hidden mr-2"
+        <header className="sticky top-0 z-40 border-b border-border bg-white">
+            <div className="mx-auto grid h-16 max-w-6xl grid-cols-[1fr_auto] items-center gap-4 px-4 sm:px-6 md:grid-cols-[1fr_auto_1fr]">
+                <Link to="/" className="flex items-center gap-2.5 justify-self-start" aria-label="TravelBeam home">
+                    <Logo />
+                    <span className="text-xl font-extrabold tracking-tight text-brand-600">TravelBeam</span>
+                </Link>
+
+                {/* Compact search pill: always one click from planning a trip. */}
+                <Link
+                    to="/create"
+                    className="hidden items-center gap-3 rounded-full border border-border-strong bg-white py-1.5 pl-5 pr-1.5 text-sm font-semibold shadow-sm transition-shadow hover:shadow-soft md:flex"
+                    aria-label="Plan a trip"
                 >
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <line x1="3" y1="12" x2="21" y2="12"></line>
-                        <line x1="3" y1="6" x2="21" y2="6"></line>
-                        <line x1="3" y1="18" x2="21" y2="18"></line>
-                    </svg>
-                </button>
-                <img src="/logoo.png" alt="Logo" className="h-8 w-8 sm:h-12 sm:w-12" />
-                <h1
-                    className="font-bold text-xl sm:text-2xl md:text-3xl lg:text-4xl tracking-wide 
-                           text-transparent bg-gradient-to-r from-black via-purplet-500 to-rose-500 bg-clip-text"
-                    style={{ fontFamily: "Montserrat, sans-serif" }}
-                >
-                    TravelBeam
-                </h1>
-            </div>
+                    <span>Plan a trip</span>
+                    <span className="grid h-8 w-8 place-items-center rounded-full bg-brand-600 text-white">
+                        <Search className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                </Link>
 
-
-            {/* Navigation & User Profile */}
-            <div className="flex items-center gap-3">
-                {user ? (
-                    <div className="flex items-center gap-3">
-                        {/* Buttons Hidden on Small Screens */}
-                        <a href="/create" className="hidden sm:block">
-                            <Button variant="outlined" className="rounded-full px-4 py-2 text-sm sm:text-base hover:bg-amber-50">
-                                New Trip
-                            </Button>
-                        </a>
-                        <a href="/my-trips" className="hidden sm:block">
-                            <Button variant="outlined" className="rounded-full px-4 py-2 text-sm sm:text-base hover:bg-amber-50">
-                                My Trips
-                            </Button>
-                        </a>
-
-                        {/* User Profile Popover */}
-                        <Popover>
-                            <PopoverTrigger>
-                                <img 
-                                    src={user.picture} 
-                                    alt="User Avatar" 
-                                    className="h-8 w-8 sm:h-10 sm:w-10 rounded-full cursor-pointer border-2 border-white" 
-                                />
-                            </PopoverTrigger>
-                            <PopoverContent className="bg-white p-2 rounded-2xl shadow-md w-30">
-                                <h2 
-                                    onClick={() => {
-                                        handleLogout();
-                                        window.location.href = "/";
-                                    }} 
-                                    className="cursor-pointer hover:text-red-500 text-center font-semibold" 
-                                >
-                                    Logout
-                                </h2>
-                            </PopoverContent>
-                        </Popover>
-                    </div>
-                ) : (
-                    <Button 
-                        onClick={() => setOpenDialog(true)} 
-                        className="px-4 py-2 text-sm sm:text-base normal-case"
-                    >
-                        Sign in
-                    </Button>
-                )}
-            </div>
-            <Drawer className="bg-amber-50"anchor="left" open={openDrawer} onClose={() => setOpenDrawer(false)}>
-                <div className="w-64 p-5 flex flex-col gap-4 items-center ">
-                    <h2 className="text-lg font-bold mb-4">Menu</h2>
-                    <a 
-                        href="/create" 
-                        className="text-lg font-medium text-gray-700 hover:text-white hover:bg-[rgb(0,137,132)] px-6 py-2 rounded-full border border-gray-300 w-full text-center transition-colors duration-300"
-                    >
-                        New Trip
-                    </a>
-                    <a 
-                        href="/my-trips" 
-                        className="text-lg font-medium text-gray-700 hover:text-white hover:bg-[rgb(0,137,132)] px-6 py-2 rounded-full border border-gray-300 w-full text-center transition-colors duration-300"
-                    >
-                        My Trips
-                    </a>
-                    {user && (
-                        <a 
-                            href="#" 
-                            onClick={() => {
-                                handleLogout();
-                                window.location.href = "/";
-                            }}
-                            className="text-lg font-medium text-red-500 hover:text-white hover:bg-red-500 px-6 py-2 rounded-full border border-red-300 w-full text-center mt-4 transition-colors duration-300"
-                        >
-                            Logout
-                        </a>
+                <div className="flex items-center gap-1 justify-self-end">
+                    {user ? (
+                        <>
+                            <nav className="hidden items-center sm:flex" aria-label="Primary">
+                                <NavLink to="/my-trips" className={navLinkClass}>My trips</NavLink>
+                            </nav>
+                            <Popover>
+                                <PopoverTrigger className="ml-1 rounded-full" aria-label="Account menu">
+                                    <Avatar user={user} />
+                                </PopoverTrigger>
+                                <PopoverContent align="end" className="w-64 rounded-2xl p-2 shadow-lift">
+                                    <div className="px-3 py-2">
+                                        <p className="truncate text-sm font-semibold">{user.name}</p>
+                                        <p className="truncate text-sm text-muted-foreground">{user.email}</p>
+                                    </div>
+                                    <div className="my-1 h-px bg-border" />
+                                    <button
+                                        onClick={handleSignOut}
+                                        className="flex min-h-11 w-full items-center gap-2 rounded-lg px-3 text-sm font-medium text-danger hover:bg-muted"
+                                    >
+                                        <LogOut className="h-4 w-4" /> Sign out
+                                    </button>
+                                </PopoverContent>
+                            </Popover>
+                            <button
+                                className="grid h-11 w-11 place-items-center rounded-full hover:bg-muted sm:hidden"
+                                onClick={() => setMenuOpenAt(menuOpen ? null : pathname)}
+                                aria-label={menuOpen ? "Close menu" : "Open menu"}
+                                aria-expanded={menuOpen}
+                            >
+                                {menuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+                            </button>
+                        </>
+                    ) : (
+                        <Button variant="outline" size="sm" onClick={() => requestLogin()}>
+                            Sign in
+                        </Button>
                     )}
                 </div>
-            </Drawer>
+            </div>
 
-            {/* Google Login Dialog */}
-            <Dialog open={openDialog}>
-                <DialogContent className="bg-white">
-                    <DialogHeader>
-                        <DialogDescription>
-                            <div className="flex flex-col items-center">
-                                <img src="/logoo.png" className="h-8 w-8 sm:h-9 sm:w-9" />
-                                <h2 className="font-bold text-lg mt-5 my-2">
-                                    Sign In With Google
-                                </h2>
-                                <p className="text-gray-600 text-sm text-center">
-                                    Securely sign in to access your trips.
-                                </p>
-                                <Button
-                                    onClick={login}
-                                    className="w-full mt-5 flex items-center justify-center space-x-2 text-md normal-case bg-blue-600 text-white hover:bg-blue-700"
-                                >
-                                    <FcGoogle size={20} />
-                                    <span>Sign In with Google</span>
-                                </Button>
-                            </div>
-                        </DialogDescription>
-                    </DialogHeader>
-                </DialogContent>
-            </Dialog>
-        </div>
+            {user && menuOpen && (
+                <nav className="border-t border-border bg-white p-3 sm:hidden" aria-label="Mobile">
+                    <Link to="/create" className="flex min-h-12 items-center gap-3 rounded-xl px-4 font-medium hover:bg-muted">
+                        <Plus className="h-5 w-5 text-brand-600" /> New trip
+                    </Link>
+                    <Link to="/my-trips" className="flex min-h-12 items-center gap-3 rounded-xl px-4 font-medium hover:bg-muted">
+                        <Map className="h-5 w-5 text-brand-600" /> My trips
+                    </Link>
+                </nav>
+            )}
+        </header>
     );
 }
 

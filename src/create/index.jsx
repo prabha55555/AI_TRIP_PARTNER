@@ -1,256 +1,307 @@
-import { chatSession } from "@/AI/AIModel.jsx";
-import { db } from "@/AI/firebase.jsx";
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogHeader,
-} from "@/components/ui/dialog";
-import { Button } from "@material-tailwind/react";  
-import { useGoogleLogin } from "@react-oauth/google";
-import axios from "axios";
 import { doc, setDoc } from "firebase/firestore";
+import { CalendarDays, Check, Loader2, MapPin, Sparkles, Users, Wallet } from "lucide-react";
 import { useEffect, useState } from "react";
-import GooglePlaceAutocomplete from "react-google-places-autocomplete";
-import { AiOutlineLoading3Quarters } from "react-icons/ai";
-import { FcGoogle } from "react-icons/fc";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { AI_PROMPT, BudgetCategories, SelectTravelList } from "./option.jsx";
+import { generateTripPlan } from "@/AI/AIModel.jsx";
+import { db } from "@/AI/firebase.jsx";
+import DestinationSearch from "@/components/custom/DestinationSearch";
+import PlacePhoto from "@/components/custom/PlacePhoto";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/form-controls";
+import { useAuth } from "@/lib/auth";
+import { cn } from "@/lib/utils";
+import { BudgetCategories, MAX_DAYS, MIN_DAYS, SelectTravelList } from "./option.jsx";
 
+const LOADING_MESSAGES = [
+    "Finding the best spots…",
+    "Picking hotels that fit your budget…",
+    "Mapping out each day…",
+    "Almost there…",
+];
 
-const apiKey = import.meta.env.VITE_GOOGLE_GEMINI_AI_API_KEY;
+const NEXT_STEPS = [
+    "Gemini drafts your hotels and day-by-day plan. This takes about 15 seconds.",
+    "The trip is saved to My Trips automatically.",
+    "Open it any time and share the link with your travel companions.",
+];
+
+/** Maps a failure to a message the user can act on. */
+function failureMessage(error) {
+    if (error?.name === "AiUnavailableError") return "The AI service is busy right now. Please try again in a minute.";
+    if ([401, 403].includes(error?.status)) return "The AI service rejected our key. Please contact the site owner.";
+    if (error instanceof SyntaxError || error?.message?.includes("missing hotels")) {
+        return "The AI returned an unexpected response. Please try again.";
+    }
+    return "We couldn't create your trip. Check your connection and try again.";
+}
+
+const clampDays = (n) => Math.min(Math.max(Math.round(n), MIN_DAYS), MAX_DAYS);
+
+function Step({ number, title, done, children }) {
+    return (
+        <section className="rounded-2xl border border-border-strong bg-card p-5 sm:p-6">
+            <h2 className="display-md flex items-center gap-3">
+                <span
+                    className={cn(
+                        "grid h-7 w-7 shrink-0 place-items-center rounded-full text-sm font-bold transition-colors",
+                        done ? "bg-brand-600 text-white" : "bg-muted text-muted-foreground"
+                    )}
+                >
+                    {done ? <Check className="h-4 w-4" /> : number}
+                </span>
+                {title}
+            </h2>
+            <div className="mt-4">{children}</div>
+        </section>
+    );
+}
+
+function OptionCard({ selected, onSelect, icon: Icon, title, desc }) {
+    return (
+        <button
+            type="button"
+            aria-pressed={selected}
+            onClick={onSelect}
+            className={cn(
+                "flex cursor-pointer flex-col gap-3 rounded-xl border p-4 text-left transition-colors",
+                selected ? "border-2 border-foreground bg-muted" : "border-border-strong bg-white hover:border-foreground"
+            )}
+        >
+            <Icon className={cn("h-6 w-6", selected ? "text-brand-600" : "text-foreground")} aria-hidden="true" />
+            <span>
+                <span className="block font-semibold">{title}</span>
+                <span className="mt-0.5 block text-sm text-muted-foreground">{desc}</span>
+            </span>
+        </button>
+    );
+}
+
+function SummaryRow({ icon: Icon, label, value }) {
+    return (
+        <li className="flex items-start gap-3 py-3">
+            <Icon className="mt-0.5 h-5 w-5 shrink-0 text-muted-foreground" aria-hidden="true" />
+            <div className="min-w-0">
+                <p className="text-sm text-muted-foreground">{label}</p>
+                <p className={cn("truncate font-semibold", !value && "font-normal text-muted-foreground")}>{value || "Not chosen yet"}</p>
+            </div>
+        </li>
+    );
+}
 
 function Create() {
-    const [place, setPlace] = useState(null);
-    const [form, setForm] = useState({});
-    const [openDialog, setOpenDialog] = useState(false);
+    const { user, requestLogin } = useAuth();
+    const navigate = useNavigate();
+    const { state: startValues } = useLocation();
+    // Optional starting values from the landing page search bar.
+    const [form, setForm] = useState(() => ({
+        ...(startValues?.destination && { destination: { label: startValues.destination } }),
+        ...(Number.isFinite(startValues?.days) && { DaysCount: clampDays(startValues.days) }),
+        ...(BudgetCategories.some((b) => b.mtitle === startValues?.budget) && { Budget: startValues.budget }),
+    }));
     const [loading, setLoading] = useState(false);
-    const navigate=useNavigate();
+    const [messageIndex, setMessageIndex] = useState(0);
 
-    const handleInput = (name, value) => {
-        setForm({ ...form, [name]: value });
-    };
+    const setField = (name, value) => setForm((f) => ({ ...f, [name]: value }));
 
+    // Rotate the progress message while the model is working (typically 10-20s).
     useEffect(() => {
-        console.log(form);
-    }, [form]);
+        if (!loading) return;
+        const id = setInterval(() => setMessageIndex((i) => Math.min(i + 1, LOADING_MESSAGES.length - 1)), 4500);
+        return () => {
+            clearInterval(id);
+            setMessageIndex(0);
+        };
+    }, [loading]);
 
-    const login = useGoogleLogin({
-        onSuccess: (tokenInfo) => {
-            console.log("Login Success:", tokenInfo);
-            GetUserProfile(tokenInfo);
-        },
-        onError: (error) => {
-            console.error("Login Error:", error);
-        },
-    });
+    const handleDays = (e) => {
+        const raw = e.target.value;
+        if (raw === "") return setField("DaysCount", "");
+        const n = Math.round(Number(raw));
+        if (n > MAX_DAYS) toast.info(`Trips are limited to ${MAX_DAYS} days.`);
+        setField("DaysCount", clampDays(n));
+    };
 
-    const onGenerate = async () => {
-        const user = localStorage.getItem("user");
-    
-        if (!user) {
-            setOpenDialog(true);
-            return;
-        }
-    
-        // Check if any required field is missing
-        if (!form?.destination?.label || !form?.DaysCount || !form?.Budget || !form?.PeopleCount) {
-            toast("Please fill all required details before generating the trip", { type: "error" });
-            return;
-        }
-    
+    const validate = () => {
+        if (!form.destination?.label) return "Choose a destination.";
+        if (!form.DaysCount) return `Enter a number of days (${MIN_DAYS}-${MAX_DAYS}).`;
+        if (!form.Budget) return "Select a budget.";
+        if (!form.PeopleCount) return "Select who you're travelling with.";
+        return null;
+    };
+
+    const completed = [form.destination?.label, form.DaysCount, form.Budget, form.PeopleCount].filter(Boolean).length;
+    const group = SelectTravelList.find((t) => t.people === form.PeopleCount)?.mtitle;
+
+    // Takes the user explicitly: right after sign-in, the `user` in this closure is still stale.
+    const generate = async (currentUser) => {
+        const problem = validate();
+        if (problem) return toast.error(problem);
+
         setLoading(true);
-        const FINAL_PROMPT = AI_PROMPT
-            .replace("{destination}", form?.destination?.label)
-            .replace("{DaysCount}", form?.DaysCount)
-            .replace("{PeopleCount}", form?.PeopleCount)
-            .replace("{Budget}", form?.Budget)
-            .replace("{DaysCount}", form?.DaysCount);
-    
         try {
-            const result = await chatSession.sendMessage(FINAL_PROMPT);
-            const tripData = await result?.response.text();
-            console.log(tripData);
-            await saveAITrip(tripData);
-            setLoading(false);
+            const tripData = await generateTripPlan({
+                destination: form.destination.label,
+                days: form.DaysCount,
+                travelers: form.PeopleCount,
+                budget: form.Budget,
+            });
+            // Random, unguessable id: trip URLs are shareable, so they must not be enumerable.
+            const id = crypto.randomUUID();
+            await setDoc(doc(db, "AI-Trips", id), {
+                id,
+                userEmail: currentUser.email,
+                createdAt: Date.now(),
+                userLocation: { ...form, destination: { label: form.destination.label } },
+                tripData,
+            });
+            navigate(`/view-trip/${id}`);
         } catch (error) {
-            console.error("Error generating trip:", error);
-            toast("Error generating trip", { type: "error" });
+            console.error("Trip generation failed:", error);
+            toast.error(failureMessage(error));
             setLoading(false);
         }
     };
-    
 
-    const saveAITrip = async (tripData) => {
-        setLoading(true);
-
-        const docId = Date.now().toString();
-        const user = JSON.parse(localStorage.getItem("user"));
-
-        try {
-            await setDoc(doc(db, "AI-Trips", docId), {
-                userLocation: form,
-                tripData: JSON.parse(tripData),
-                userEmail: user?.email,
-                id: docId,
-            });
-            setLoading(false);
-            navigate(`/view-trip/${docId}`);
-            console.log("Trip data saved successfully");
-        } catch (error) {
-            console.error("Error saving trip data:", error);
-            toast("Error saving trip data", { type: "error" });
-        }
-
-        
-    };
-
-    const GetUserProfile = (tokenInfo) => {
-        axios
-            .get(
-                `https://www.googleapis.com/oauth2/v1/userinfo?access_token=${tokenInfo?.access_token}`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${tokenInfo?.access_token}`,
-                        Accept: "Application/json",
-                    },
-                }
-            )
-            .then((resp) => {
-                console.log(resp);
-                localStorage.setItem("user", JSON.stringify(resp.data));
-                setOpenDialog(false);
-                onGenerate();
-            })
-            .catch((error) => {
-                console.error("Error fetching user profile:", error);
-            });
-    };
+    const onGenerate = () => (user ? generate(user) : requestLogin(generate));
 
     return (
-        <div className="relative min-h-screen w-full">
-            <img src="/bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover z-0 -top-10" />
-            <div className="relative z-10">
-                <div className="sm:px-10 md:px-32 lg:px-56 xl:px-72 px-5 mt-10">
-                    <h2 className="font-bold text-3xl">
-                        🏖️Tell us your travel preferences🏖️🌴
-                    </h2>
-                    <p className="mt-3 text-yellow-500 text-xl"></p>
-                    <p className="mt-3 text-yellow-500 text-xl">
-                        Just provide the basic information, and our trip planner will generate
-                        a customized itinerary based on your preferences
+        <div className="mx-auto max-w-6xl px-4 pb-32 pt-8 sm:px-6 lg:pb-16 lg:pt-12">
+            <h1 className="display-xl">Plan your trip</h1>
+            <p className="mt-2 text-lg text-muted-foreground">Four quick questions, then we&apos;ll build your itinerary.</p>
+
+            <div className="mt-8 grid gap-10 lg:grid-cols-12">
+                <div className="flex flex-col gap-5 lg:col-span-7">
+                    <Step number={1} done={Boolean(form.destination?.label)} title="Where do you want to go?">
+                        <DestinationSearch value={form.destination ?? null} onChange={(v) => setField("destination", v)} />
+                    </Step>
+
+                    <Step number={2} done={Boolean(form.DaysCount)} title={`How many days? (${MIN_DAYS}-${MAX_DAYS})`}>
+                        <Input
+                            type="number"
+                            inputMode="numeric"
+                            min={MIN_DAYS}
+                            max={MAX_DAYS}
+                            value={form.DaysCount ?? ""}
+                            onChange={handleDays}
+                            placeholder="e.g. 3"
+                            aria-label="Number of days"
+                        />
+                        <div className="mt-3 flex flex-wrap gap-2">
+                            {Array.from({ length: MAX_DAYS - MIN_DAYS + 1 }, (_, i) => MIN_DAYS + i).map((d) => (
+                                <button
+                                    key={d}
+                                    type="button"
+                                    aria-pressed={form.DaysCount === d}
+                                    aria-label={`${d} ${d === 1 ? "day" : "days"}`}
+                                    onClick={() => setField("DaysCount", d)}
+                                    className={cn(
+                                        "h-10 min-w-10 cursor-pointer rounded-full border px-4 text-sm font-semibold transition-colors",
+                                        form.DaysCount === d ? "border-foreground bg-foreground text-white" : "border-border-strong hover:border-foreground"
+                                    )}
+                                >
+                                    {d}
+                                </button>
+                            ))}
+                        </div>
+                    </Step>
+
+                    <Step number={3} done={Boolean(form.Budget)} title="What's your budget?">
+                        <div className="grid gap-3 sm:grid-cols-3">
+                            {BudgetCategories.map((b) => (
+                                <OptionCard
+                                    key={b.id}
+                                    icon={b.icon}
+                                    title={b.mtitle}
+                                    desc={b.desc}
+                                    selected={form.Budget === b.mtitle}
+                                    onSelect={() => setField("Budget", b.mtitle)}
+                                />
+                            ))}
+                        </div>
+                    </Step>
+
+                    <Step number={4} done={Boolean(form.PeopleCount)} title="Who's travelling?">
+                        <div className="grid gap-3 sm:grid-cols-2">
+                            {SelectTravelList.map((t) => (
+                                <OptionCard
+                                    key={t.id}
+                                    icon={t.icon}
+                                    title={t.mtitle}
+                                    desc={t.desc}
+                                    selected={form.PeopleCount === t.people}
+                                    onSelect={() => setField("PeopleCount", t.people)}
+                                />
+                            ))}
+                        </div>
+                    </Step>
+                </div>
+
+                {/* Booking-style summary card: sticky on desktop; mobile gets the bottom bar below. */}
+                <aside className="hidden lg:col-span-5 lg:block" aria-label="Your trip">
+                    <div className="sticky top-24 overflow-hidden rounded-2xl border border-border-strong bg-card shadow-lift">
+                        <PlacePhoto
+                            query={form.destination?.label}
+                            alt={form.destination?.label ?? ""}
+                            icon={MapPin}
+                            className="aspect-[3/2]"
+                        />
+                        <div className="p-6">
+                            <h2 className="display-md">Your trip</h2>
+                            <ul className="mt-2 divide-y divide-border">
+                                <SummaryRow icon={MapPin} label="Destination" value={form.destination?.label} />
+                                <SummaryRow icon={CalendarDays} label="Duration" value={form.DaysCount ? `${form.DaysCount} ${form.DaysCount === 1 ? "day" : "days"}` : ""} />
+                                <SummaryRow icon={Wallet} label="Budget" value={form.Budget} />
+                                <SummaryRow icon={Users} label="Travelling as" value={group} />
+                            </ul>
+                            <Button size="lg" className="mt-4 w-full" disabled={loading} onClick={onGenerate}>
+                                <Sparkles className="h-5 w-5" aria-hidden="true" /> Generate my trip
+                            </Button>
+                            <div className="mt-6 border-t border-border pt-5">
+                                <h3 className="text-sm font-semibold">What happens next</h3>
+                                <ol className="mt-3 space-y-3">
+                                    {NEXT_STEPS.map((s, i) => (
+                                        <li key={s} className="flex gap-3 text-sm text-muted-foreground">
+                                            <span className="grid h-5 w-5 shrink-0 place-items-center rounded-full bg-muted text-xs font-bold text-foreground">{i + 1}</span>
+                                            {s}
+                                        </li>
+                                    ))}
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </aside>
+            </div>
+
+            {/* Mobile: what happens next + sticky action bar */}
+            <section className="mt-8 rounded-2xl bg-muted p-5 lg:hidden" aria-label="What happens next">
+                <h2 className="text-sm font-semibold">What happens next</h2>
+                <ol className="mt-3 space-y-2 text-sm text-muted-foreground">
+                    {NEXT_STEPS.map((s, i) => (
+                        <li key={s}>{i + 1}. {s}</li>
+                    ))}
+                </ol>
+            </section>
+            <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-white px-4 py-3 shadow-lift lg:hidden">
+                <div className="mx-auto flex max-w-xl items-center gap-4">
+                    <p className="shrink-0 text-sm text-muted-foreground">
+                        <span className="font-semibold text-foreground">{completed}/4</span> done
                     </p>
-                    <div className="mt-20 flex flex-col gap-10">
-                        <div>
-                            <h2 className="text-xl my-3 font-medium">
-                                What is your destination of choice ❓
-                            </h2>
-                            <GooglePlaceAutocomplete
-                                apiKey={import.meta.env.VITE_GOOGLE_PLACES_API_KEY}
-                                placeholder="Enter a destination"
-                                selectProps={{
-                                    place,
-                                    onChange: (e) => {
-                                        setPlace(e);
-                                        handleInput("destination", e);
-                                    },
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <h2 className="text-xl my-3 font-medium">
-                                How many days are you planning your trip 🎉❓
-                            </h2>
-                            <input
-                                className="w-full bg-transparent placeholder:text-slate-400 text-slate-700 text-sm border border-white bg-white
-                                    rounded-md px-3 py-2 transition duration-300 ease focus:outline-none focus:border-slate-400 hover:border-slate-300 shadow-sm focus:shadow"
-                                placeholder="Ex.2"
-                                type="number"
-                                min="1"
-                                max="6"
-                                onChange={(e) => {
-                                    if (parseInt(e.target.value) > 6) {
-                                        toast("Please enter days between 1 to 6", { type: "error" });
-                                        e.target.value = 6;
-                                    }
-                                    handleInput("DaysCount", e.target.value);
-                                }}
-                            />
-                        </div>
-                        <div>
-                            <h2 className="text-xl my-3 font-medium">
-                                What is your Budget 🫰❓
-                            </h2>
-                            <div className="grid grid-cols-3 gap-5 mt-5">
-                                {BudgetCategories.map((item, index) => (
-                                    <div
-                                        onClick={() => handleInput("Budget", item.mtitle)}
-                                        key={index}
-                                        className={`p-4 border border-white rounded-lg hover:bg-white-400 shadow-[0_10px_20px_rgba(0,0,0,0.4)] cursor-pointer
-                                             ${
-                                                    form?.Budget === item.mtitle && "shadow-xl !border-black bg-amber-50"
-                                             }`}
-                                    >
-                                        <h2 className="font-bold text-lg mt-3">{item.mtitle}</h2>
-                                        <h2 className="text-4xl">{item.icon}</h2>
-                                        <h2 className="text-sm text-black -500 mt-4">{item.desc}</h2>
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-                        <div>
-                            <h2 className="text-xl my-3 font-medium">
-                                Who do you plan on travel on your next adventure 🍁❓
-                            </h2>
-                            <div className="grid grid-cols-3 gap-5 mt-5">
-                                {SelectTravelList.map((item, index) => (
-                                    <div
-                                        onClick={() => handleInput("PeopleCount", item.people)}
-                                        key={index}
-                                        className={`p-4 border border-white rounded-lg hover:bg-white-400 shadow-[0_10px_20px_rgba(0,0,0,0.4)] cursor-pointer
-                                        ${
-                                             form?.PeopleCount === item.people && "shadow-xl !border-black bg-amber-50"
-                                        }`}           
-                                    >
-                                        <h2 className="text-4xl">{item.icon}</h2>
-                                        <h2 className="font-bold text-lg mt-3">{item.mtitle}</h2>
-                                        <h2 className="text-sm  text-black -500">{item.desc}</h2>
-                                    </div>
-                                ))}
-                            </div>
-                            
-                        </div>
-                        
-                    </div>
-                    <div className="my-10 justify-center flex ">
-                        
-                        <Button disabled={loading} onClick={onGenerate} >
-                            {loading ? <AiOutlineLoading3Quarters className="h-7 w-7 animate-spin" /> : "Make the Trip"}
-                        </Button>
-                    </div>
-                    <Dialog open={openDialog}>
-                        <DialogContent className="bg-white">
-                            <DialogHeader>
-                                <DialogDescription>
-                                    <img src="/logoo.png" className="h-9 w-8" />
-                                    <h2 className="font-bold text-lg mt-7 my-3">
-                                        Sign In With Google
-                                    </h2>
-                                    <p> Sign in to the App With authentication security</p>
-                                    <Button
-                                        onClick={login}
-                                        className="w-full mt-5 flex items-center justify-center space-x-2 text-md normal-case"
-                                    >
-                                        <FcGoogle size={20} />
-                                        <span>Sign In with Google</span>
-                                    </Button>
-                                </DialogDescription>
-                            </DialogHeader>
-                        </DialogContent>
-                    </Dialog>
+                    <Button size="lg" className="flex-1" disabled={loading} onClick={onGenerate}>
+                        <Sparkles className="h-5 w-5" aria-hidden="true" /> Generate my trip
+                    </Button>
                 </div>
             </div>
+
+            {loading && (
+                <div role="status" aria-live="polite" className="fixed inset-0 z-50 grid place-items-center bg-black/55 px-6">
+                    <div className="flex w-full max-w-sm flex-col items-center rounded-3xl bg-white p-8 text-center shadow-lift">
+                        <Loader2 className="h-10 w-10 animate-spin text-brand-600" />
+                        <h2 className="display-md mt-5">Building your trip to {form.destination?.label?.split(",")[0]}</h2>
+                        <p className="mt-2 text-sm text-muted-foreground">{LOADING_MESSAGES[messageIndex]}</p>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

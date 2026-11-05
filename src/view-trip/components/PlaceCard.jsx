@@ -1,64 +1,46 @@
-import { GetPlaceDetails, PHOTO_REF_URL } from '@/AI/GlobalApi';
-import { Button } from "@material-tailwind/react";
-import { useEffect, useState } from 'react';
-import { FaLocationDot } from "react-icons/fa6";
-import { Link } from 'react-router-dom';
+import { Clock, MapPin, Star, Ticket } from "lucide-react";
+import PlacePhoto from "@/components/custom/PlacePhoto";
 
-function PlaceCard({ place }) {
-  const [isActive, setIsActive] = useState(false);
-  const [photoUrl, setPhotoUrl] = useState();
-  
-  useEffect(() => {
-    place && GetPlacePhoto();
-  }, [place]);
+function PlaceCard({ place, destination = "" }) {
+    const mapsUrl =
+        "https://www.google.com/maps/search/?api=1&query=" +
+        encodeURIComponent([place?.placeName, destination].filter(Boolean).join(", "));
 
-  const GetPlacePhoto = async () => {
-    const data = {
-      textQuery: place?.placeName
-    };
-
-    try {
-      const result = await GetPlaceDetails(data);
-      const photos = result?.data?.places[0]?.photos;
-      if (photos && photos.length > 3) {
-        const photoRef = photos[3].name;
-        const PhotoUrl = PHOTO_REF_URL.replace('{NAME}', photoRef);
-        setPhotoUrl(PhotoUrl);
-      } else if (photos && photos.length > 0) {
-        const photoRef = photos[0].name;
-        const PhotoUrl = PHOTO_REF_URL.replace('{NAME}', photoRef);
-        setPhotoUrl(PhotoUrl);
-      } else {
-        setPhotoUrl('/trip.jpg');
-      }
-    } catch (error) {
-      console.error("Error fetching place details:", error);
-      setPhotoUrl('/trip.jpg');
-    }
-  };
-
-  return (
-    <Link to={'https://www.google.com/maps/search/?api=1&query=' + place?.placeName} target="_blank">
-      <div 
-        className="rounded-xl p-3 mt-5 flex gap-5 cursor-pointer 
-                   transition-transform transition-shadow duration-300 ease-in-out 
-                   bg-white shadow-md 
-                   hover:bg-amber-50 hover:shadow-xl hover:scale-105"
-      >
-        <img 
-          src={photoUrl ? photoUrl : '/trip.jpg'} 
-          className='w-[100px] h-[130px] rounded-xl object-cover'
-          alt={place?.placeName}
-        />
-        <div>
-          <h2 className='font-bold text-lg'>{place?.placeName}</h2>
-          <p className='text-sm text-black-400 mt-2'>{place?.placeDetails}</p>
-          <p className='text-sm text-gray-400 mt-2 my-2'>💸 {place?.ticketPricing}</p>
-          <Button><FaLocationDot /></Button>
-        </div>
-      </div>
-    </Link>
-  );
+    return (
+        <a
+            href={mapsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex gap-4 rounded-2xl border border-border p-3 transition-shadow hover:shadow-soft"
+        >
+            <PlacePhoto
+                query={place?.placeName}
+                alt={place?.placeName ?? ""}
+                icon={MapPin}
+                className="aspect-[4/3] w-28 shrink-0 self-start rounded-xl sm:w-40"
+                imgClassName="transition-transform duration-500 group-hover:scale-[1.04]"
+            />
+            <div className="min-w-0 flex-1 py-0.5">
+                <div className="flex items-start justify-between gap-3">
+                    <h4 className="font-semibold">{place?.placeName}</h4>
+                    {place?.rating != null && (
+                        <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold">
+                            <Star className="h-4 w-4 fill-foreground text-foreground" aria-hidden="true" /> {place.rating}
+                        </span>
+                    )}
+                </div>
+                {place?.placeDetails && <p className="mt-1 line-clamp-2 text-sm text-muted-foreground sm:line-clamp-3">{place.placeDetails}</p>}
+                <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                    {place?.timeTravel && (
+                        <span className="inline-flex items-center gap-1.5"><Clock className="h-4 w-4" aria-hidden="true" /> {place.timeTravel}</span>
+                    )}
+                    {place?.ticketPricing && (
+                        <span className="inline-flex items-center gap-1.5"><Ticket className="h-4 w-4" aria-hidden="true" /> {place.ticketPricing}</span>
+                    )}
+                </div>
+            </div>
+        </a>
+    );
 }
 
 export default PlaceCard;

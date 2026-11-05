@@ -1,123 +1,62 @@
-# TravelBeam - AI-Powered Travel Planner
+﻿# TravelBeam – AI Trip Planner
 
-## Overview
-TravelBeam is an intelligent travel planning application that helps users create personalized travel itineraries using AI. The application provides custom travel recommendations based on user preferences, including destination, duration, budget, and group size.
+Enter a destination, number of days, budget and travel group. TravelBeam asks Google Gemini for a structured itinerary (hotels + day-by-day places), enriches it with real photos from the Google Places API, saves it to Firestore and lets you revisit or share it.
 
 ## Features
-- **AI-Powered Itinerary Generation**: Custom travel plans created using Google's Generative AI
-- **Google Authentication**: Secure sign-in using Google OAuth
-- **Responsive Design**: Works seamlessly across desktop and mobile devices
-- **Interactive UI**: User-friendly interface with intuitive navigation
-- **Trip Management**: Save and manage multiple trip itineraries
-- **Place Recommendations**: Suggests places to visit with detailed information
-- **Hotel Recommendations**: Provides hotel options based on preferences
-- **Weather Integration**: Real-time weather forecasts for your destination
-- **Budget Tracking**: Keep track of estimated expenses for your trip
+- Google sign-in (OAuth 2.0 implicit flow via `@react-oauth/google`)
+- Destination autocomplete (Google Places)
+- AI-generated hotels and day-by-day itinerary (Gemini 2.0 Flash, JSON mode)
+- Place/hotel photos from Places API (cached, with fallbacks)
+- Saved trips (Firestore), shareable trip links, "Open in Google Maps"
+- Responsive UI with loading, empty and error states
 
-## Technology Stack
-- **Frontend**: React.js with Vite for blazing fast development
-- **Styling**: Tailwind CSS for utility-first design
-- **State Management**: Redux for global state handling
-- **Authentication**: Google OAuth 2.0
-- **Database**: Firebase Firestore for real-time data storage
-- **Hosting**: Firebase Hosting for deployment
-- **APIs**: 
-    - Google Places API for location data
-    - Google Generative AI (Gemini) for intelligent recommendations
-    - Google Maps API for interactive maps
-    - OpenWeather API for weather forecasts
+## Tech stack
+| Layer | Choice |
+|---|---|
+| UI | React 18, Vite 6, React Router 6 (data router, lazy routes) |
+| Styling | Tailwind CSS v4 (CSS-first `@theme` tokens), Radix primitives (shadcn-style), lucide icons, sonner toasts |
+| Auth | Google OAuth (`useGoogleLogin`), profile kept in `localStorage`, exposed through `AuthProvider` |
+| AI | `@google/generative-ai` – Gemini Flash with automatic model fallback (retired/busy models are skipped), `responseMimeType: application/json` |
+| Data | Firebase Firestore, collection `AI-Trips` |
+| Destination search | Open-Meteo geocoding API (free, no key) |
+| Photos | Wikipedia API (free, no key); Google Places optional via `VITE_USE_GOOGLE_PLACES=true` (needs billing) |
 
-## Prerequisites
-- Node.js (v14 or higher)
-- npm or yarn
-- Google Cloud Platform account with enabled APIs:
-    - Places API
-    - Maps JavaScript API
-    - Identity Services
-    - Generative AI Studio
-- Firebase account with Firestore database
-
-## Environment Variables
-Create a `.env.local` file in the root directory with the following variables:
-```env
-VITE_GOOGLE_PLACES_API_KEY=your_google_places_api_key
-VITE_GOOGLE_AUTH_CLIENT_ID=your_google_auth_client_id
-VITE_GOOGLE_GEMINI_AI_API_KEY=your_gemini_ai_api_key
-VITE_FIREBASE_API_KEY=your_firebase_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain
-VITE_FIREBASE_PROJECT_ID=your_firebase_project_id
-VITE_FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
-VITE_FIREBASE_MESSAGING_SENDER_ID=your_firebase_messaging_sender_id
-VITE_FIREBASE_APP_ID=your_firebase_app_id
-```
-
-## Installation
-1. Clone the repository
-```bash
-git clone https://github.com/prabha55555/AI_TRIP_PARTNER.git
-```
-
-2. Install dependencies
+## Getting started
 ```bash
 cd mu
+cp .env.example .env.local   # fill in your keys
 npm install
-```
-
-3. Start the development server
-```bash
 npm run dev
+npm run lint
+npm test          # Vitest unit + component tests
+npm run build
+```
+Required: a Gemini API key (Generative Language API), a Google OAuth web client id, and a Firebase project with Firestore. No Google Maps/Places billing is needed: destination search and photos use free public APIs. To prefer Google Places photos, enable billing + Places API (New) and set `VITE_USE_GOOGLE_PLACES=true`.
+
+## Project structure
+```
+src/
+  main.jsx                 Router, providers, lazy-loaded routes
+  index.css                Tailwind v4 import + design tokens
+  lib/auth.jsx             AuthProvider / useAuth (login, logout, session)
+  lib/trips.js             Pure trip helpers (labels, days, sorting, overview), unit-tested`n  lib/utils.js             cn() class-name helper
+  AI/AIModel.jsx           generateTripPlan(): prompt, JSON parsing, validation
+  AI/GlobalApi.jsx         Photo lookup (Wikipedia, optional Google), promise cache, usePlacePhoto hook
+  AI/geocode.js            Destination search (Open-Meteo)
+  AI/firebase.jsx          Firestore init
+  components/custom/       Layout, Header, Home/Hero, LoginDialog, PlacePhoto, ShareButton, SiteFooter, RouteError
+  components/ui/           Button, Badge, Skeleton, StatCard, EmptyState, SectionHeading, form controls, Dialog, Popover, Toaster
+  create/                  Trip form (+ option.jsx: budget/group options)
+  my-trips/                List of the user's saved trips
+  view-trip/               Trip page: InfoSection, Hotels, PlacesToVisit, cards
 ```
 
+## Data flow
+`Create form → generateTripPlan() → Gemini returns JSON → validated → setDoc(AI-Trips/<uuid>) → navigate(/view-trip/<uuid>) → getDoc → components render; each card calls usePlacePhoto(name) → Wikipedia → photo URL.`
 
-## Project Structure
-```
-mu/
-│   ├── src/                  # Source files
-│   │   ├── AI/               # AI integration services
-│   │   │   ├── gemini.js     # Gemini AI API integration
-│   │   │   └── prompts.js    # AI prompt templates
-│   │   ├── components/
-│   │   │   ├── custom/       # Application-specific components
-│   │   │   │   ├── Header.jsx
-│   │   │   │   ├── Hero.jsx
-│   │   │   │   └── ...
-│   │   │   └── ui/           # Reusable UI components
-│   │   │       ├── Button.jsx
-│   │   │       ├── Card.jsx
-│   │   │       └── ...
-│   │   ├── pages/            # Application pages
-│   │   │   ├── create/       # Trip creation pages
-│   │   │   │   ├── CreateTrip.jsx
-│   │   │   │   └── ...
-│   │   │   ├── my-trips/     # Trip management pages
-│   │   │   │   ├── MyTrips.jsx
-│   │   │   │   └── ...
-│   │   │   └── view-trip/    # Trip details pages
-│   │   │       ├── ViewTrip.jsx
-│   │   │       └── ...
-│   │   ├── services/         # Firebase and API services
-│   │   │   ├── firebase.js
-│   │   │   ├── googleMaps.js
-│   │   │   └── ...
-│   │   ├── store/            # Redux store configuration
-│   │   │   ├── index.js
-│   │   │   └── reducers/
-│   │   ├── styles/           # Global styles
-│   │   ├── utils/            # Utility functions
-│   │   ├── App.jsx           # Main application component
-│   │   └── main.jsx          # Entry point
-│   ├── public/               # Static assets
-│   ├── index.html            # HTML template
-│   ├── tailwind.config.js    # Tailwind CSS configuration
-│   ├── vite.config.js        # Vite configuration
-│   └── package.json          # Project dependencies
-```
+## Security notes (read before deploying)
+- All keys are `VITE_*`, so they are **bundled into the browser**. Restrict each key in Google Cloud (HTTP referrer + API restrictions) or move Gemini/Places calls behind a server/Cloud Function.
+- Auth is client-side only and Firestore is queried by `userEmail`. Production needs Firebase Authentication plus Firestore rules, e.g. `allow create: if request.auth.token.email == request.resource.data.userEmail; allow read: if true` (shareable by unguessable id) with `allow update, delete: if request.auth.token.email == resource.data.userEmail`.
+- `firestore.rules` in this repo is the target rule set; it only takes effect once users sign in via Firebase Auth.
+- Never commit `.env.local`. If keys were ever pushed to a public repo, rotate them.
 
-## Features in Detail
-
-### 1. Trip Creation
-- **Destination Selection**: Utilize Google Places Autocomplete for accurate location search
-- **Duration Planning**: Set trip length from 1 to 30 days
-- **Budget Configuration**: Choose from economy, moderate, or luxury budget categories
-- **Group Customization**: Specify group size and type (family, friends, solo, couple)
-- **Interest Selection**: Choose activities and interests for personalized recommendations

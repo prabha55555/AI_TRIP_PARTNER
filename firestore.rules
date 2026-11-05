@@ -1,0 +1,14 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Trips are shareable by their unguessable id, so reads are open.
+    // Writes require a Firebase-authenticated owner (needs Firebase Auth sign-in to enforce).
+    match /AI-Trips/{tripId} {
+      allow read: if true;
+      allow create: if request.auth != null
+                    && request.resource.data.userEmail == request.auth.token.email;
+      allow update, delete: if request.auth != null
+                    && resource.data.userEmail == request.auth.token.email;
+    }
+  }
+}
