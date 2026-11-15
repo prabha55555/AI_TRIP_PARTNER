@@ -9,7 +9,9 @@
         "lint": "eslint .",
         "preview": "vite preview",
         "test": "vitest run",
-        "test:watch": "vitest"
+        "test:watch": "vitest",
+        "server": "node --env-file-if-exists=.env.local server/index.js",
+        "server:watch": "node --watch --env-file-if-exists=.env.local server/index.js"
     },
     "dependencies": {
         "@google/generative-ai": "^0.21.0",
@@ -20,6 +22,8 @@
         "@tailwindcss/vite": "^4.0.6",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "cors": "^2.8.6",
+        "express": "^5.3.0",
         "firebase": "^11.3.1",
         "lucide-react": "^0.475.0",
         "react": "^18.3.1",

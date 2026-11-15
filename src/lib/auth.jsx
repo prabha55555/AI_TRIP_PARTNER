@@ -5,7 +5,31 @@ import LoginDialog from "@/components/custom/LoginDialog";
 import { isValidProfile, parseStoredProfile } from "./profile";
 
 const STORAGE_KEY = "user";
+const TOKEN_KEY = "token";
 const AuthContext = createContext(null);
+
+/**
+ * The Google access token proves to OUR server who is calling. It lives in sessionStorage
+ * (cleared when the tab closes) rather than localStorage, and expires after about an hour.
+ */
+function storeToken({ access_token, expires_in }) {
+    try {
+        const expiresAt = Date.now() + (Number(expires_in) || 3600) * 1000;
+        sessionStorage.setItem(TOKEN_KEY, JSON.stringify({ token: access_token, expiresAt }));
+    } catch {
+        /* storage blocked: the user simply signs in again when a token is needed */
+    }
+}
+
+/** The current token, or null if missing or about to expire (then the caller asks the user to sign in again). */
+function readToken() {
+    try {
+        const saved = JSON.parse(sessionStorage.getItem(TOKEN_KEY));
+        return saved?.token && saved.expiresAt - 60_000 > Date.now() ? saved.token : null;
+    } catch {
+        return null;
+    }
+}
 
 function readStoredUser() {
     // Bad or legacy data is treated as "signed out" rather than showing a broken account.
@@ -35,6 +59,7 @@ export function AuthProvider({ children }) {
                 const profile = { name, email, picture };
                 if (!isValidProfile(profile)) throw new Error("Google profile had no email");
                 localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+                storeToken(tokenInfo);
                 setUser(profile);
                 setLoginOpen(false);
                 toast.success(`Welcome, ${name?.split(" ")[0] ?? "traveler"}!`);
@@ -63,11 +88,16 @@ export function AuthProvider({ children }) {
     const signOut = useCallback(() => {
         googleLogout();
         localStorage.removeItem(STORAGE_KEY);
+        try {
+            sessionStorage.removeItem(TOKEN_KEY);
+        } catch {
+            /* ignore */
+        }
         setUser(null);
     }, []);
 
     const value = useMemo(
-        () => ({ user, requestLogin, signOut }),
+        () => ({ user, requestLogin, signOut, getToken: readToken }),
         [user, requestLogin, signOut]
     );
 

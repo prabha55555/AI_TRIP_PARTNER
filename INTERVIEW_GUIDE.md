@@ -9,11 +9,12 @@ Written for: you, preparing to explain and defend this project in technical inte
 ```
 Browser (React SPA, Vite)
  ├─ Google Identity (OAuth)  → profile {name,email,picture} → localStorage via AuthProvider
- ├─ Gemini API               → trip JSON  (called directly from the browser)
+ ├─ Express API (server/)    → verifies token, validates, rate-limits, calls Gemini (key stays server-side)
+ ├─ Gemini API               ← called only by the Express server
  ├─ Firestore                → collection "AI-Trips" (one doc per trip)
  └─ Places API (New)         → photos for destination / hotels / places
 ```
-There is **no backend of your own**. That is the central design trade-off: fast to build and host (Vercel static + `vercel.json` SPA rewrite) but secrets and authorization live in the client (see §6).
+There is a **small Express backend** (`server/`) for the AI call: it keeps the Gemini key secret, verifies the Google token with Google, validates input and rate-limits per user. Trips are still read/written from the browser to Firestore, so authorization of *data* is still client-side (see §6).
 
 ### Request flow: creating a trip
 1. `create/index.jsx`: controlled form state `{destination, DaysCount, Budget, PeopleCount}`.

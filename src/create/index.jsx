@@ -28,12 +28,25 @@ const NEXT_STEPS = [
 
 /** Maps a failure to a message the user can act on. */
 function failureMessage(error) {
-    if (error?.name === "AiUnavailableError") return "The AI service is busy right now. Please try again in a minute.";
-    if ([401, 403].includes(error?.status)) return "The AI service rejected our key. Please contact the site owner.";
-    if (error instanceof SyntaxError || error?.message?.includes("missing hotels")) {
-        return "The AI returned an unexpected response. Please try again.";
+    switch (error?.code) {
+        case "ai_unavailable":
+            return "The AI service is busy right now. Please try again in a minute.";
+        case "rate_limited":
+            return "You've reached the hourly trip limit. Please try again later.";
+        case "unauthorized":
+            return "Your session expired. Please sign in again.";
+        case "invalid_request":
+            return error.message;
+        case "ai_misconfigured":
+            return "The AI service is not set up correctly. Please contact the site owner.";
+        case "ai_error":
+        case "bad_response":
+            return "The AI returned an unexpected response. Please try again.";
+        case "network":
+            return "We couldn't reach the server. Check your connection and try again.";
+        default:
+            return "We couldn't create your trip. Please try again.";
     }
-    return "We couldn't create your trip. Check your connection and try again.";
 }
 
 const clampDays = (n) => Math.min(Math.max(Math.round(n), MIN_DAYS), MAX_DAYS);
@@ -90,7 +103,7 @@ function SummaryRow({ icon: Icon, label, value }) {
 }
 
 function Create() {
-    const { user, requestLogin } = useAuth();
+    const { user, requestLogin, getToken } = useAuth();
     const navigate = useNavigate();
     const { state: startValues } = useLocation();
     // Optional starting values from the landing page search bar.
@@ -138,14 +151,21 @@ function Create() {
         const problem = validate();
         if (problem) return toast.error(problem);
 
+        // The server needs a fresh login token. If it expired (or the tab was reopened), sign in again first.
+        const token = getToken();
+        if (!token) return requestLogin(generate);
+
         setLoading(true);
         try {
-            const tripData = await generateTripPlan({
-                destination: form.destination.label,
-                days: form.DaysCount,
-                travelers: form.PeopleCount,
-                budget: form.Budget,
-            });
+            const tripData = await generateTripPlan(
+                {
+                    destination: form.destination.label,
+                    days: form.DaysCount,
+                    travelers: form.PeopleCount,
+                    budget: form.Budget,
+                },
+                token
+            );
             // Random, unguessable id: trip URLs are shareable, so they must not be enumerable.
             const id = crypto.randomUUID();
             await setDoc(doc(db, "AI-Trips", id), {
