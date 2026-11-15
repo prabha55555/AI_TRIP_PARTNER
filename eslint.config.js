@@ -7,7 +7,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 export default [
   { ignores: ['dist'] },
   // The backend runs in Node, not the browser.
-  { files: ['server/**/*.js'], languageOptions: { globals: globals.node } },
+  { files: ['server/**/*.js', 'api/**/*.js'], languageOptions: { globals: globals.node } },
   {
     files: ['**/*.{js,jsx}'],
     languageOptions: {

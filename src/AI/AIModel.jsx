@@ -27,6 +27,11 @@ export async function generateTripPlan({ destination, days, travelers, budget },
 
     const body = await res.json().catch(() => ({}));
     if (!res.ok) {
+        // Our server always sends an `error` code. 404/405 without one means the page was served by something
+        // that is not our API (e.g. a static host with no backend deployed), so say that clearly.
+        if (!body.error && [404, 405].includes(res.status)) {
+            throw new ApiError("The backend server was not found.", { status: res.status, code: "backend_missing" });
+        }
         throw new ApiError(body.message ?? `Server error ${res.status}`, { status: res.status, code: body.error });
     }
     if (!body.tripData) throw new ApiError("The server sent an empty response.", { status: res.status, code: "bad_response" });

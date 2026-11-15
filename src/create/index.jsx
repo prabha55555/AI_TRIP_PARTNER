@@ -42,6 +42,8 @@ function failureMessage(error) {
         case "ai_error":
         case "bad_response":
             return "The AI returned an unexpected response. Please try again.";
+        case "backend_missing":
+            return "The trip server isn't running or isn't reachable. Start it with 'npm run server' (or deploy it) and try again.";
         case "network":
             return "We couldn't reach the server. Check your connection and try again.";
         default:
